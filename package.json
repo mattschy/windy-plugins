@@ -1,7 +1,7 @@
 {
-  "name": "windy-plugin-examples",
+  "name": "windy-plugin-boulder",
   "version": "0.5.0",
-  "description": "Windy plugin system enables anyone, with basic knowledge of Javascript to enhance Windy with new functionality (default desc).",
+  "description": "Windy plugin that show some boulder rocks on the map. At the moment only for the Odenwald.",
   "main": "dist/plugin.js",
   "scripts": {
     "start": "node ./compiler.js --build --watch --prompt --serve --transpile",
@@ -11,9 +11,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/windycom/windy-plugins"
+    "url": "git+https://github.com/mattschy/windy-plugins"
   },
-  "author": "Windyty, S.E.",
+  "author": "mattschy",
   "license": "MIT",
   "dependencies": {
     "@babel/core": "^7.1.2",

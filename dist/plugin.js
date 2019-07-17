@@ -7,53 +7,83 @@
 W.loadPlugin(
 /* Mounting options */
 {
-  "name": "windy-plugin-examples",
-  "version": "0.2.0",
-  "author": "Windyty, S.E.",
+  "name": "windy-plugin-boulder",
+  "version": "0.5.0",
+  "author": "mattschy",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/windycom/windy-plugins"
+    "url": "git+https://github.com/mattschy/windy-plugins"
   },
-  "description": "Windy plugin system enables anyone, with basic knowledge of Javascript to enhance Windy with new functionality (default desc).",
-  "displayName": "Loading backend data",
-  "hook": "menu",
-  "className": "plugin-lhpane plugin-mobile-fullscreen",
-  "exclusive": "lhpane"
+  "description": "Windy plugin that show some boulder rocks on the map. At the moment only for the Odenwald.",
+  "displayName": "Boulder Rocks",
+  "hook": "menu"
 },
 /* HTML */
-'<div class="mobile-header">This is title for mobile devices</div> <div class="plugin-content"> <h2>Loading data from Windy API</h2> <p>This plugin demonstrates communication with backend API and retrieving varions parameters</p> <p>1) Get your API key <a hrer="https://api4.windy.com/api-key/">here</a>. Ignore "Allowed domains" fields.</p> <p>2) Use <b>@windy/pluginDataLoader</b> module to retrieve the data.</p> <hr> <p>Forecast data:</p> <p data-ref="forecast" class="size-xxs"></p> <hr> <p>Air data:</p> <p data-ref="airData" class="size-xxs"></p> <hr> <p>Do you want to add additional data to our backend API? Let us know <a href="https://community.windy.com/category/21/windy-plugins">here</a></p> </div>',
+'',
 /* CSS */
-'.onwindy-plugin-examples .left-border{left:400px}.onwindy-plugin-examples #search{display:none}#windy-plugin-examples{width:400px}#windy-plugin-examples .plugin-content{padding:20px 15px 15px 15px;font-size:14px;line-height:1.6}#windy-plugin-examples .plugin-content a{color:#9D0300}',
+'',
 /* Constructor */
 function () {
   var _this = this;
 
+  var Evented = W.require('Evented');
+
   var map = W.require('map');
 
-  var pluginDataLoader = W.require('pluginDataLoader');
+  var bcast = W.require('broadcast');
 
-  var options = {
-    key: 'RxcwkWO2XWsfEbdidcsskbyWqhToAwLx',
-    plugin: 'windy-plugin-examples'
-  };
-  var load = pluginDataLoader(options);
+  var clickmessage = "click for weather forecast<br>doubleclick for past weather data<br>";
+  var tblbegin = "<table><tr><th>below 6a :&nbsp&nbsp</th><th>6a-6c+ :&nbsp&nbsp</th><th>7a-... :&nbsp&nbsp</th></tr><tr>";
+  var rocks = [[49.725054, 8.690041, "<h3>Felsenmeer(+ Borstein, Hohenstein)</h2><br>" + tblbegin + "<td>85+++</td><td>127</td><td>46</td></tr></table><br>" + clickmessage], [49.785035, 8.669139, "<h3>Mühltal</h3><br>" + tblbegin + "<td>9</td><td>14</td><td>4</td></tr></table><br>" + clickmessage], [49.748890, 8.760186, "<h3>Lützelbach</h3><br>" + tblbegin + "<td>20</td><td>39</td><td>11</td></tr></table><br>" + clickmessage], [49.728538, 8.779184, "<h3>Neunkirchen</h3><br>" + tblbegin + "<td>65</td><td>57</td><td>9</td></tr></table><br>" + clickmessage], [49.685411, 8.786355, "<h3>Lindenfels</h3><br>" + tblbegin + "<td>39</td><td>30</td><td>6</td></tr></table><br>" + clickmessage], [49.727333, 8.802494, "<h3>Laudenau</h3><br>" + tblbegin + "<td>34</td><td>27</td><td>6</td></tr></table><br>" + clickmessage], [49.739589, 8.798285, "<h3>Steinau</h3><br>" + tblbegin + "<td>28</td><td>58</td><td>18</td></tr></table><br>" + clickmessage], [49.740297, 8.810833, "<h3>Messbach</h3><br>" + tblbegin + "<td>10</td><td>15</td><td>2</td></tr></table><br>" + clickmessage], [49.754096, 8.815553, "<h3>Nonrod</h3><br>" + tblbegin + "<td>18</td><td>13</td><td>3</td></tr></table><br>" + clickmessage], [49.740583, 8.822180, "<h3>Erlau</h3><br>" + tblbegin + "<td>2</td><td>6</td><td>4</td></tr></table><br>" + clickmessage], [49.767497, 8.791081, "<h3>Lichtenberg</h3><br>" + tblbegin + "<td>0</td><td>1</td><td>1</td></tr></table><br>" + clickmessage], [49.737770, 8.911591, "<h3>Böllstein</h3><br>" + tblbegin + "<td>2</td><td>4</td><td>2</td></tr></table><br>" + clickmessage], [49.679703, 8.696766, "<h3>Hambach</h3><br>" + tblbegin + "<td>20</td><td>12</td><td>1</td></tr></table><br>" + clickmessage], [49.555406, 8.783792, "<h3>Absteinach</h3><br>" + tblbegin + "<td>12</td><td>8</td><td>2</td></tr></table><br>" + clickmessage], [49.567530, 8.838915, "<h3>Wald-Michelbach</h3><br>" + tblbegin + "<td>3</td><td>3</td><td>1</td></tr></table><br>" + clickmessage], [49.407535, 8.703931, "<h3>Heidelberg, Riesenstein</h3><br>" + tblbegin + "<td>7+++</td><td>16</td><td>16</td></tr></table><br>" + clickmessage]];
+  var markers = new Array(rocks.length);
+  var hasHooks = false;
+  var stopclosing = false;
 
   this.onopen = function () {
-    map.setView([50, 14]);
-    var dataOptions = {
-      model: 'gfs',
-      lat: 50,
-      lon: 14
-    };
-    load('forecast', dataOptions).then(function (_ref) {
-      var data = _ref.data;
-      _this.refs.forecast.innerHTML = JSON.stringify(data);
-      console.log(data);
-    });
-    load('airData', dataOptions).then(function (_ref2) {
-      var data = _ref2.data;
-      _this.refs.airData.innerHTML = JSON.stringify(data);
-      console.log(data);
-    });
+    if (hasHooks) {
+      return;
+    } else {
+      var myIcon = L.icon({
+        iconUrl: 'https://cdn.pixabay.com/photo/2016/04/22/14/42/png-1345905_960_720.png',
+        iconSize: [38, 38]
+      });
+
+      for (var i = 0; i < rocks.length; i++) {
+        markers[i] = new L.marker([rocks[i][0], rocks[i][1]], {
+          icon: myIcon
+        }).bindPopup(rocks[i][2]).addTo(map).on("mouseover", function () {
+          this.openPopup();
+        }).on("mouseout", function () {
+          this.closePopup();
+        }).on("click", function () {
+          stopclosing = true;
+          bcast.emit('rqstOpen', 'detail', {
+            lat: rocks[this.index][0],
+            lon: rocks[this.index][1]
+          });
+        }).on("dblclick", function () {
+          window.open('https://www.meteoblue.com/de/products/historyplus/download/' + rocks[this.index][0] + 'N' + rocks[this.index][1] + 'E', '_blank');
+        });
+        markers[i].index = i;
+        hasHooks = true;
+      }
+    }
+  };
+
+  this.onclose = function () {
+    if (stopclosing) {
+      stopclosing = false;
+
+      _this.open();
+
+      return;
+    } else if (hasHooks) {
+      markers.forEach(function (l) {
+        return map.removeLayer(l);
+      });
+      hasHooks = false;
+    } else {
+      return;
+    }
   };
 });
